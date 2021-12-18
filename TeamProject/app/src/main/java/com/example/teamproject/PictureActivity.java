@@ -7,42 +7,76 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 public class PictureActivity extends AppCompatActivity {
+    Map<String, String> pictures;
+    ImageView pictureImg;
+    String region;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_picture);
 
-        Intent dataIntent = getIntent();
-        String type = dataIntent.getStringExtra("type");
-
-        ShowImage(type);
+        pictures = new HashMap<>();
+        pictureImg = findViewById(R.id.img);
 
         ActionBar actionBar = getSupportActionBar();
         actionBar.hide();
 
-        ImageView iv01 = findViewById(R.id.arrow);
-        Animation animation = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.translate);
-        iv01.startAnimation(animation);
+        Intent dataIntent = getIntent();
+        region = dataIntent.getStringExtra("region");
 
-        iv01.setOnClickListener(new View.OnClickListener(){ //세 번째 포스터가 클릭 되었을 때
+        ImageView arrow = findViewById(R.id.arrow);
+        Animation animation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate);
+        arrow.startAnimation(animation);
+
+        SetImage(pictures);
+
+        arrow.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view){
+                finish();
                 Intent intent = new Intent(PictureActivity.this, InfoActivity.class); //전환할 액티비티
-                intent.putExtra("type", 0);
+                intent.putExtra("region", region);
                 startActivity(intent); //액티비티 전환
+                finish();
             }
         });
     }
 
-    public void ShowImage(String type){
-        ImageView iv = findViewById(R.id.img);
+    public void SetImage(Map<String, String> map){
+        String txt = "";
+        String[] pictureText;
+        int line;
 
-        if(type.equals("Mountain")) iv.setImageResource(R.drawable.middle_mountain);
-        else if(type.equals("Jeju")) iv.setImageResource(R.drawable.middle_jeju);
+        InputStream inputStream = getResources().openRawResource(R.raw.picture);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try{
+            line = inputStream.read();
+            while(line != -1){
+                byteArrayOutputStream.write(line);
+                line = inputStream.read();
+            }
+            txt = byteArrayOutputStream.toString("UTF-8");
+            inputStream.close();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        pictureText = txt.split("\n");
+        for(String s : pictureText){
+            map.put(s.split("-")[0].trim(), s.split("-")[1].trim());
+        }
+        pictureImg.setImageResource(getResources().getIdentifier(map.get(region), "drawable", getPackageName()));
     }
 }
